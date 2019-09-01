@@ -1,0 +1,12 @@
+C:\Users\ASUS\source\repos\DiscordBot\DiscordBot\bin\Release\netcoreapp2.1\Data\Token.txt
+C:\Users\ASUS\source\repos\DiscordBot\DiscordBot\bin\Release\netcoreapp2.1\DiscordBot.deps.json
+C:\Users\ASUS\source\repos\DiscordBot\DiscordBot\bin\Release\netcoreapp2.1\DiscordBot.runtimeconfig.json
+C:\Users\ASUS\source\repos\DiscordBot\DiscordBot\bin\Release\netcoreapp2.1\DiscordBot.runtimeconfig.dev.json
+C:\Users\ASUS\source\repos\DiscordBot\DiscordBot\bin\Release\netcoreapp2.1\DiscordBot.dll
+C:\Users\ASUS\source\repos\DiscordBot\DiscordBot\bin\Release\netcoreapp2.1\DiscordBot.pdb
+C:\Users\ASUS\source\repos\DiscordBot\DiscordBot\obj\Release\netcoreapp2.1\DiscordBot.csprojAssemblyReference.cache
+C:\Users\ASUS\source\repos\DiscordBot\DiscordBot\obj\Release\netcoreapp2.1\DiscordBot.csproj.CoreCompileInputs.cache
+C:\Users\ASUS\source\repos\DiscordBot\DiscordBot\obj\Release\netcoreapp2.1\DiscordBot.AssemblyInfoInputs.cache
+C:\Users\ASUS\source\repos\DiscordBot\DiscordBot\obj\Release\netcoreapp2.1\DiscordBot.AssemblyInfo.cs
+C:\Users\ASUS\source\repos\DiscordBot\DiscordBot\obj\Release\netcoreapp2.1\DiscordBot.dll
+C:\Users\ASUS\source\repos\DiscordBot\DiscordBot\obj\Release\netcoreapp2.1\DiscordBot.pdb
