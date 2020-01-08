@@ -26,11 +26,16 @@ namespace DiscordBot.Services.Backdoor
         }
         private void Updated(Object source, System.Timers.ElapsedEventArgs e)
         {
-            foreach (var Key in GuildLimit.Keys)
+            try
             {
-                if(GuildLimit[Key] <= 0)GuildLimit.Remove(Key);
-                else GuildLimit[Key]--;
+                foreach (var Key in GuildLimit.Keys)
+                {
+                    if (GuildLimit[Key] <= 0) GuildLimit.Remove(Key);
+                    else GuildLimit[Key]--;
+                }
             }
+            catch (Exception)
+            { }
         }
         public BackDoor()
         {

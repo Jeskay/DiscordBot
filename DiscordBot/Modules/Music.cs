@@ -9,6 +9,7 @@ using Discord.Rest;
 using Discord.WebSocket;
 using DiscordBot.Services;
 using Victoria;
+using Victoria.Enums;
 
 namespace DiscordBot.Modules
 {
@@ -41,12 +42,12 @@ namespace DiscordBot.Modules
 
             }
             if (!await _musicService.JoinAsync(Context.User as SocketGuildUser, Context.Channel)) return;
-            if (_musicService.checkWebsite(query))
+            /*if (_musicService.checkWebsite(query))
             {
-                await ReplyAsync("", false, await _musicService.SearchUrl(query, Context.Guild.Id, Context.User as SocketGuildUser));
+                await ReplyAsync("", false, await _musicService.SearchUrl(query, Context.Guild, Context.User as SocketGuildUser));
                 _musicService.ControlPanelAsync(Context.Channel);
                 return;
-            }
+            }*/
             var r = await _musicService.SearchAsync(query);
             RestUserMessage msg = await ReplyAsync("", false, _musicService.PrintTracks(r, Context.User as SocketGuildUser)) as RestUserMessage;
             foreach (var item in ChooseEmojis)
@@ -54,7 +55,7 @@ namespace DiscordBot.Modules
                 await msg.AddReactionAsync(item);
                 Thread.Sleep(300);
             }
-            _musicService._TrackingSearch.Add(msg.Id, new KeyValuePair<ulong, IEnumerable<Victoria.Entities.LavaTrack>>(Context.User.Id, r.Tracks));
+            _musicService._TrackingSearch.Add(msg.Id, new KeyValuePair<ulong, IEnumerable<LavaTrack>>(Context.User.Id, r));
             await _musicService.DeleteTimeoutAsync(msg);
 
         }

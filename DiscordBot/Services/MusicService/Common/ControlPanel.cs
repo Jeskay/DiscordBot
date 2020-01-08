@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using Victoria;
-using Victoria.Entities;
+using Victoria.Enums;
 using Discord;
 using Discord.WebSocket;
 using System.Threading.Tasks;
@@ -63,69 +63,69 @@ namespace DiscordBot.Services.Common
         {
             get
             {
-                return _player.CurrentTrack;
+                return _player.Track;
             }
         }
         public TimeSpan TrackPosition
         {
             get
             {
-                return _player.CurrentTrack.Position;
+                return _player.Track.Position;
             }
         }
         public TimeSpan TrackLenght
         {
             get
             {
-                return _player.CurrentTrack.Length;
+                return _player.Track.Duration;
             }
         }
         
         public async Task AddPositionAsync()
         {
             if (_player is null) return;
-            TimeSpan time = new TimeSpan(0, 0, (int)(_player.CurrentTrack.Length.TotalSeconds * (PositionChange / 100.0)));
-            if (!(_player.CurrentTrack.Position + time >= _player.CurrentTrack.Length))
-                await _player.SeekAsync(_player.CurrentTrack.Position + time);
+            TimeSpan time = new TimeSpan(0, 0, (int)(_player.Track.Duration.TotalSeconds * (PositionChange / 100.0)));
+            if (!(_player.Track.Position + time >= _player.Track.Duration))
+                await _player.SeekAsync(_player.Track.Position + time);
 
-            _embed.Fields[1].Value = $"> [{Writetime(_player.CurrentTrack.Position, _player.CurrentTrack.Length)} / {Writetime(_player.CurrentTrack.Length, _player.CurrentTrack.Length)}]";
-            _embed.ImageUrl = Position(_player.CurrentTrack.Position, _player.CurrentTrack.Length);
+            _embed.Fields[1].Value = $"> [{Writetime(_player.Track.Position, _player.Track.Duration)} / {Writetime(_player.Track.Duration, _player.Track.Duration)}]";
+            _embed.ImageUrl = Position(_player.Track.Position, _player.Track.Duration);
         }
 
         public async Task RemovePositionAsync()
         {
             if (_player is null) return;
-            TimeSpan time = new TimeSpan(0, 0, (int)(_player.CurrentTrack.Length.TotalSeconds * (PositionChange / 100.0)));
-            if (!(_player.CurrentTrack.Position - time <= new TimeSpan(0, 0, 0)))
-                await _player.SeekAsync(_player.CurrentTrack.Position - time);
+            TimeSpan time = new TimeSpan(0, 0, (int)(_player.Track.Duration.TotalSeconds * (PositionChange / 100.0)));
+            if (!(_player.Track.Position - time <= new TimeSpan(0, 0, 0)))
+                await _player.SeekAsync(_player.Track.Position - time);
 
-            _embed.Fields[1].Value = $"> [{Writetime(_player.CurrentTrack.Position, _player.CurrentTrack.Length)} / {Writetime(_player.CurrentTrack.Length, _player.CurrentTrack.Length)}]";
-            _embed.ImageUrl = Position(_player.CurrentTrack.Position, _player.CurrentTrack.Length);
+            _embed.Fields[1].Value = $"> [{Writetime(_player.Track.Position, _player.Track.Duration)} / {Writetime(_player.Track.Duration, _player.Track.Duration)}]";
+            _embed.ImageUrl = Position(_player.Track.Position, _player.Track.Duration);
         }
 
         public async Task IncreaseVolumeAsync()
         {
             if (_player is null) return;
-            int volume = _player.CurrentVolume + VolumeChange;
+            ushort volume = Convert.ToUInt16(_player.Volume + VolumeChange);
             if (volume > 150) volume = 150;
-            await _player.SetVolumeAsync(volume);
-            _embed.Fields[0].Value = $"> [ {_player.CurrentVolume} ]";
+            await _player.UpdateVolumeAsync(volume);
+            _embed.Fields[0].Value = $"> [ {_player.Volume} ]";
         }
 
         public async Task DecreaseVolumeAsync()
         {
             if (_player is null) return;
-            int volume = _player.CurrentVolume - VolumeChange;
+            ushort volume = Convert.ToUInt16(_player.Volume - VolumeChange);
             if (volume < 2) volume = 2;
-            await _player.SetVolumeAsync(volume);
-            _embed.Fields[0].Value = $"> [ {_player.CurrentVolume} ]";
+            await _player.UpdateVolumeAsync(volume);
+            _embed.Fields[0].Value = $"> [ {_player.Volume} ]";
         }
 
         public async Task PauseOrResumeAsync()
         {
             if (_player is null) return;
 
-            if (!_player.IsPaused)
+            if (_player.PlayerState != PlayerState.Paused)
                 await _player.PauseAsync();
             
             else
@@ -142,17 +142,17 @@ namespace DiscordBot.Services.Common
         public async Task NewSong()
         {
             _embed.Author = new EmbedAuthorBuilder();
-            _embed.Author.Name = _player.CurrentTrack.Author;
-            _embed.Description = $"{_player.CurrentTrack.Title}\n[Открыть плейлист]({SiteURL}) | .q";//ссылка на видео { _player.CurrentTrack.Uri.ToString()}
+            _embed.Author.Name = _player.Track.Author;
+            _embed.Description = $"{_player.Track.Title}\n[Открыть плейлист]({SiteURL}) | .q";//ссылка на видео { _player.CurrentTrack.Uri.ToString()}
+            _embed.ThumbnailUrl = await _player.Track.FetchArtworkAsync();
             _embed.Author.IconUrl = _embed.ThumbnailUrl;
-            _embed.ThumbnailUrl = await _player.CurrentTrack.FetchThumbnailAsync();
             _embed.Author.IconUrl = _embed.ThumbnailUrl;
         }
         public async Task<Embed> ControlEmbed()
         {
             await NewSong();
-            _embed.Fields[1].Value = $"> [{Writetime(_player.CurrentTrack.Position, _player.CurrentTrack.Length)} / {Writetime(_player.CurrentTrack.Length, _player.CurrentTrack.Length)}]";
-            _embed.ImageUrl = Position(_player.CurrentTrack.Position, _player.CurrentTrack.Length);
+            _embed.Fields[1].Value = $"> [{Writetime(_player.Track.Position, _player.Track.Duration)} / {Writetime(_player.Track.Duration, _player.Track.Duration)}]";
+            _embed.ImageUrl = Position(_player.Track.Position, _player.Track.Duration);
             return _embed.Build();
         }
 
@@ -162,11 +162,11 @@ namespace DiscordBot.Services.Common
             _player = player;
             _embed = new EmbedBuilder();
             _embed.Color = Color.DarkPurple;
-            _embed.AddField("Громкость", $"> [ {_player.CurrentVolume} ]");
-            _embed.AddField("Текущая позиция", $"> [{Writetime(_player.CurrentTrack.Position, _player.CurrentTrack.Length)} / {Writetime(_player.CurrentTrack.Length, _player.CurrentTrack.Length)}]");
+            _embed.AddField("Громкость", $"> [ {_player.Volume} ]");
+            _embed.AddField("Текущая позиция", $"> [{Writetime(_player.Track.Position, _player.Track.Duration)} / {Writetime(_player.Track.Duration, _player.Track.Duration)}]");
             _embed.Footer = new EmbedFooterBuilder();
             _embed.Footer.Text = $"Управляющий - {Provider.Username}";
-            _embed.ImageUrl = Position(_player.CurrentTrack.Position, _player.CurrentTrack.Length);
+            _embed.ImageUrl = Position(_player.Track.Position, _player.Track.Duration);
             Repeat = false;
         }
     }

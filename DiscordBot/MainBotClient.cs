@@ -63,8 +63,8 @@ namespace DiscordBot
            => new ServiceCollection()
            .AddSingleton(_Client)
            .AddSingleton(_Commands)
-           .AddSingleton<LavaRestClient>()
-           .AddSingleton<LavaSocketClient>()
+           .AddSingleton<LavaConfig>()
+           .AddSingleton<LavaNode>()
            .AddSingleton<MusicService>()
            .BuildServiceProvider();
     }

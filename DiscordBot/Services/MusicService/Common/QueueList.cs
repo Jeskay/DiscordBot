@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Victoria;
-using Victoria.Entities;
+using Victoria.Enums;
 
 namespace DiscordBot.Services.Common
 {
@@ -15,14 +15,14 @@ namespace DiscordBot.Services.Common
         private TimeSpan totalLenght;
         private const string InviteBot = "https://discordapp.com/api/oauth2/authorize?client_id=488973809185980416&permissions=0&scope=bot";
 
-        private string Queuelist(List<Victoria.Queue.IQueueObject> queue)
+        private string Queuelist(List<Victoria.Interfaces.IQueueable> queue)
         {
             string result = "";
             for (int i = 1; i <= queue.Count && i < 10; i++)
             {
                 LavaTrack track = (LavaTrack)queue[i - 1];
-                result += $"**{i}.** " + track.Title + " **[" + track.Length + "]**" + '\n';
-                totalLenght += track.Length;
+                result += $"**{i}.** " + track.Title + " **[" + track.Duration + "]**" + '\n';
+                totalLenght += track.Duration;
             }
             return result;
         }

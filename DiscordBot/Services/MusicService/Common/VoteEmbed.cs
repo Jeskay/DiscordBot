@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using Victoria;
-using Victoria.Entities;
 
 namespace DiscordBot.Services.Common
 {
@@ -19,23 +18,23 @@ namespace DiscordBot.Services.Common
 
         public async Task<Embed> Skip()
         {
-            LavaTrack oldtrack = _player.CurrentTrack;
+            LavaTrack oldtrack = _player.Track;
             if (_player is null || _player.Queue.Count == 0)
             {
-                if (_player.CurrentTrack != null)
+                if (_player.Track != null)
                 {
-                    await _player.SeekAsync(_player.CurrentTrack.Length);
+                    await _player.SeekAsync(_player.Track.Duration);
                 }
                 embedBuilder.Description = $"пропущено {oldtrack.Title}";
                 return embedBuilder.Build();
             }
             await _player.SkipAsync();
-            embedBuilder.Description = $"пропущено {oldtrack.Title}, сейчас играет {_player.CurrentTrack.Title}.";
+            embedBuilder.Description = $"пропущено {oldtrack.Title}, сейчас играет {_player.Track.Title}.";
             return embedBuilder.Build();
         }
         public Embed Voting()
         {
-            embedBuilder.Description = $"{_user.Mention} начал голосование за пропуск песни **{_player.CurrentTrack.Title}**. \n Нажмите на реакцию для пропуска трека.";
+            embedBuilder.Description = $"{_user.Mention} начал голосование за пропуск песни **{_player.Track.Title}**. \n Нажмите на реакцию для пропуска трека.";
             return embedBuilder.Build();
         }
         public VoteEmbed(SocketGuildUser user, LavaPlayer player, SocketSelfUser selfuser)

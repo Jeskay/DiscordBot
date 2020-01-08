@@ -11,7 +11,8 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Victoria;
-using Victoria.Entities;
+using Victoria.Enums;
+using Victoria.EventArgs;
 
 namespace DiscordBot.Services
 {
@@ -22,18 +23,20 @@ namespace DiscordBot.Services
         private Dictionary<ulong, KeyValuePair<RestUserMessage, ControlPanel>> _TrackingControlPanels;
         private Dictionary<ulong, VoteEmbed> TrackingVote;
 
-        private LavaRestClient _lavarestClient;
-        public readonly LavaSocketClient _lavaSocketClient;
+        //private LavaRestClient _lavarestClient;
+        //public readonly LavaSocketClient _lavaSocketClient;
+        private readonly LavaNode _lavaNode;
         private DiscordSocketClient _client;
         private Emoji[] ControlPanelEmojis = { new Emoji("\u23EE"), new Emoji("\u23EF"), new Emoji("🔲"), new Emoji("\u23ED"), new Emoji("🔺"), new Emoji("🔻"), new Emoji("\u274C") };
         private WarningEmbed warnembed = new WarningEmbed();
         private BackDoor backDoor = new BackDoor();
 
-        public MusicService(LavaRestClient lavaRestClient, LavaSocketClient lavaSocketClient, DiscordSocketClient client)
+        public MusicService(LavaNode lavaNode, DiscordSocketClient client)
         {
             _client = client;
-            _lavarestClient = lavaRestClient;
-            _lavaSocketClient = lavaSocketClient;
+            _lavaNode = lavaNode;
+            //_lavarestClient = lavaRestClient;
+            //_lavaSocketClient = lavaSocketClient;
             _TrackingSearch = new Dictionary<ulong, KeyValuePair<ulong, IEnumerable<LavaTrack>>>();
             _TrackingControlPanels = new Dictionary<ulong, KeyValuePair<RestUserMessage, ControlPanel>>();
             TrackingVote = new Dictionary<ulong, VoteEmbed>();
@@ -41,8 +44,8 @@ namespace DiscordBot.Services
         public Task InitializeAsync()
         {
             _client.Ready += ClientReadyAsync;
-            _lavaSocketClient.Log += LogAsync;
-            _lavaSocketClient.OnTrackFinished += TrackFinished;
+            _lavaNode.OnLog += LogAsync;
+            _lavaNode.OnTrackEnded += TrackFinished;
             _client.ReactionRemoved += OnReactionRemoved;
             _client.ReactionAdded += OnReactionAdded;
             _client.UserVoiceStateUpdated += UserVoiceStateUpdate;
@@ -51,7 +54,7 @@ namespace DiscordBot.Services
         public async Task SkipAsync(ISocketMessageChannel channel, SocketGuildUser user)
         {
             var chnl = channel as SocketGuildChannel;
-            var player = _lavaSocketClient.GetPlayer(chnl.Guild.Id);
+            var player = _lavaNode.GetPlayer(chnl.Guild);
             if (player.VoiceChannel != user.VoiceChannel) return;
             VoteEmbed embed = new VoteEmbed(user, player, _client.CurrentUser);
             var msg = await channel.SendMessageAsync("", false, embed.Voting());
@@ -82,7 +85,7 @@ namespace DiscordBot.Services
                 msg = await chnl.SendMessageAsync("", false, warnembed.ShouldbeInVoice());
                 return false;
             }
-            await _lavaSocketClient.ConnectAsync(user.VoiceChannel, channel as ITextChannel);
+            await _lavaNode.JoinAsync(user.VoiceChannel, channel as ITextChannel);
             await Task.Delay(500);
             if (channel.Guild.CurrentUser.VoiceChannel == null)
             {
@@ -115,7 +118,7 @@ namespace DiscordBot.Services
             }
             else
             {
-                await _lavaSocketClient.DisconnectAsync(user.VoiceChannel);
+                await _lavaNode.LeaveAsync(user.VoiceChannel);
                 await chnl.SendMessageAsync("", false, warnembed.LeavingRoom(user.VoiceChannel.Name, user.VoiceChannel.CreateInviteAsync().Result.Url));
                 AdminUsers.Remove(user.Id);
             }
@@ -134,35 +137,35 @@ namespace DiscordBot.Services
             embed.AddField("Реакции панели управления", ":black_square_button: - пропуск текущей песни \n :x: - отключение бота от канала\n :play_pause: - пауза/продолжить воспроизведение\n :track_previous: :track_next: - перемотать на 10% назад/вперед\n :small_red_triangle: :small_red_triangle_down: - увеличить/уменьшить громкость на 20%");
             return embed.Build();
         }
-        public Embed PrintTracks(SearchResult search, SocketGuildUser user)
+        public Embed PrintTracks(IReadOnlyList<LavaTrack> search, SocketGuildUser user)
         {
             SelectEmbed embed = new SelectEmbed();
             return embed.Print(_client, search, user); 
         }
-        public async Task<Embed> SearchUrl(string track, ulong guildId, SocketGuildUser user)
+        public async Task<Embed> SearchUrl(string track, IGuild guild, SocketGuildUser user)
         {
-            var results = await _lavarestClient.SearchTracksAsync(track);
-            if (results.LoadType == LoadType.NoMatches || results.LoadType == LoadType.LoadFailed)
+            var results = await _lavaNode.SearchAsync(track);
+            if (results.LoadStatus == LoadStatus.NoMatches || results.LoadStatus == LoadStatus.LoadFailed)
                 return null;
-            return await PlayAsync(results.Tracks.FirstOrDefault(), guildId, user);
+            return await PlayAsync(results.Tracks.FirstOrDefault(), guild, user);
         }
-        public async Task<SearchResult> SearchAsync(string query)
+        public async Task<IReadOnlyList<LavaTrack>> SearchAsync(string query)
         {
-            var results = await _lavarestClient.SearchYouTubeAsync(query);
-            if (results.LoadType == LoadType.NoMatches || results.LoadType == LoadType.LoadFailed)
+            var results = await _lavaNode.SearchYouTubeAsync(query);
+            if (results.LoadStatus == LoadStatus.NoMatches || results.LoadStatus == LoadStatus.LoadFailed)
                 return null;
-            return results;
+            return results.Tracks;
         }
-        public async Task GetTrackFromUrl(string url, ulong guildId)
+        public async Task GetTrackFromUrl(string url, IGuild guild)
         {
-            LavaPlayer player = _lavaSocketClient.GetPlayer(guildId);
-            await player.PlayAsync(_lavarestClient.SearchTracksAsync(url).Result.Tracks.FirstOrDefault());
+            LavaPlayer player = _lavaNode.GetPlayer(guild);
+            await player.PlayAsync(_lavaNode.SearchAsync(url).Result.Tracks.FirstOrDefault());
         }
-        public async Task<Embed> PlayAsync(LavaTrack track, ulong guildId, SocketGuildUser user)
+        public async Task<Embed> PlayAsync(LavaTrack track, IGuild guild, SocketGuildUser user)
         {
-            LavaPlayer _player = _lavaSocketClient.GetPlayer(guildId);
+            LavaPlayer _player = _lavaNode.GetPlayer(guild);
             if (_player.VoiceChannel != user.VoiceChannel) return null;
-            if (_player.IsPlaying)
+            if (_player.PlayerState == PlayerState.Playing)
             {
                 _player.Queue.Enqueue(track);
                 return warnembed.Added(user.Mention, track.Title);
@@ -171,36 +174,36 @@ namespace DiscordBot.Services
             {
 
                 await _player.PlayAsync(track);
-                return warnembed.AddandPlay(track.Title, track.Length.ToString(), user.Mention);
+                return warnembed.AddandPlay(track.Title, track.Duration.ToString(), user.Mention);
             }
         }
 
-        public async Task StopAsync(ulong guildId)
+        public async Task StopAsync(IGuild guild)
         {
-            LavaPlayer _player = _lavaSocketClient.GetPlayer(guildId);
+            LavaPlayer _player = _lavaNode.GetPlayer(guild);
             if (_player is null) return;
             await _player.StopAsync();
         }
 
-        public async Task<string> SkipAsync(ulong guildId)
+        public async Task<string> SkipAsync(IGuild guild)
         {
-            LavaPlayer _player = _lavaSocketClient.GetPlayer(guildId);
-            string oldTrack = _player.CurrentTrack.Title;
+            LavaPlayer _player = _lavaNode.GetPlayer(guild);
+            string oldTrack = _player.Track.Title;
             if (_player is null || _player.Queue.Items.Count() is 0)
             {
-                if (_player.CurrentTrack != null)
+                if (_player.Track != null)
                 {
-                    await _player.SeekAsync(_player.CurrentTrack.Length);
+                    await _player.SeekAsync(_player.Track.Duration);
                     return $"пропущено {oldTrack}";
                 }
                 return "Плэйлист пуст.";
             }
            await _player.SkipAsync();
-           return $"Пропущено: {oldTrack} \nСейчас играет: {_player.CurrentTrack.Title}";
+           return $"Пропущено: {oldTrack} \nСейчас играет: {_player.Track.Title}";
         }
         public Embed PrintQueue(SocketGuild guild)
         {
-            LavaPlayer _player = _lavaSocketClient.GetPlayer(guild.Id);
+            LavaPlayer _player = _lavaNode.GetPlayer(guild);
             QueuList queu = new QueuList();
             return queu.Print(guild, _player, _client);
         }
@@ -214,7 +217,7 @@ namespace DiscordBot.Services
         public async void ControlPanelAsync(ISocketMessageChannel channel)
         {
             var chnl = channel as SocketGuildChannel;
-            LavaPlayer _player = _lavaSocketClient.GetPlayer(chnl.Guild.Id);
+            LavaPlayer _player = _lavaNode.GetPlayer(chnl.Guild);
             var key = AdminUsers.Where(kvp => kvp.Value == chnl.Guild.Id).Select(kvp => kvp.Key).FirstOrDefault();
             ControlPanel controlPanel = new ControlPanel(_player, chnl.Guild.GetUser(key));
             if (_player == null) return;
@@ -229,16 +232,16 @@ namespace DiscordBot.Services
             // await UpdateTrack(controlPanel, msg);
             await DeleteTimeoutAsync(msg);
         }
-        public async Task<string> SetVolumeAsync(int volume, ulong guildId)
+        public async Task<string> SetVolumeAsync(ushort volume, IGuild guild)
         {
-            LavaPlayer _player = _lavaSocketClient.GetPlayer(guildId);
+            LavaPlayer _player = _lavaNode.GetPlayer(guild);
             if (_player is null) return "there is no player";
 
             if (volume > 150 || volume < 2)
             {
                 return "the volume must be lower than 150 and higher than 2";
             }
-            await _player.SetVolumeAsync(volume);
+            await _player.UpdateVolumeAsync(volume);
 
             return $"the volume set to {volume}";
         }
@@ -252,13 +255,13 @@ namespace DiscordBot.Services
                 var chnl = channel as SocketGuildChannel;
                 var user = reaction.User.Value as SocketGuildUser;
                 if (user.Id != _TrackingSearch[reaction.MessageId].Key) return;
-                var guildId = chnl.Guild.Id;
+                var guild = chnl.Guild;
                 Embed result = null;
-                if (reaction.Emote.Name == "1\u20e3") result = await PlayAsync(_TrackingSearch[reaction.MessageId].Value.ElementAt(0), guildId, user);
-                if (reaction.Emote.Name == "2\u20e3") result = await PlayAsync(_TrackingSearch[reaction.MessageId].Value.ElementAt(1), guildId, user);
-                if (reaction.Emote.Name == "3\u20e3") result = await PlayAsync(_TrackingSearch[reaction.MessageId].Value.ElementAt(2), guildId, user);
-                if (reaction.Emote.Name == "4\u20e3") result = await PlayAsync(_TrackingSearch[reaction.MessageId].Value.ElementAt(3), guildId, user);
-                if (reaction.Emote.Name == "5\u20e3") result = await PlayAsync(_TrackingSearch[reaction.MessageId].Value.ElementAt(4), guildId, user);
+                if (reaction.Emote.Name == "1\u20e3") result = await PlayAsync(_TrackingSearch[reaction.MessageId].Value.ElementAt(0), guild, user);
+                if (reaction.Emote.Name == "2\u20e3") result = await PlayAsync(_TrackingSearch[reaction.MessageId].Value.ElementAt(1), guild, user);
+                if (reaction.Emote.Name == "3\u20e3") result = await PlayAsync(_TrackingSearch[reaction.MessageId].Value.ElementAt(2), guild, user);
+                if (reaction.Emote.Name == "4\u20e3") result = await PlayAsync(_TrackingSearch[reaction.MessageId].Value.ElementAt(3), guild, user);
+                if (reaction.Emote.Name == "5\u20e3") result = await PlayAsync(_TrackingSearch[reaction.MessageId].Value.ElementAt(4), guild, user);
 
                 if (result is null) return;
                 await channel.SendMessageAsync("", false, result);
@@ -269,7 +272,7 @@ namespace DiscordBot.Services
             if (_TrackingControlPanels.ContainsKey(reaction.MessageId))
             {
                 var chnl = channel as SocketGuildChannel;
-                var guildId = chnl.Guild.Id;
+                var guild = chnl.Guild;
                 var controlpanel = _TrackingControlPanels[reaction.MessageId].Value;
                 if (reaction.User.Value.Id != controlpanel.Provider.Id) return;
                 if (reaction.Emote.Name == "🔺") await controlpanel.IncreaseVolumeAsync();
@@ -277,12 +280,12 @@ namespace DiscordBot.Services
                 if (reaction.Emote.Name == "\u23EF") await controlpanel.PauseOrResumeAsync();
                 if (reaction.Emote.Name == "\u23ED") await controlpanel.AddPositionAsync();
                 if (reaction.Emote.Name == "\u23EE") await controlpanel.RemovePositionAsync();
-                if (reaction.Emote.Name == "🔲") await SkipAsync(guildId);
+                if (reaction.Emote.Name == "🔲") await SkipAsync(guild);
                 if (reaction.Emote.Name == "\u274C")
                 {
                     AdminUsers.Remove(reaction.UserId);
                     await channel.DeleteMessageAsync(_TrackingControlPanels[reaction.MessageId].Key);
-                    await _lavaSocketClient.DisconnectAsync(chnl.Guild.CurrentUser.VoiceChannel);
+                    await _lavaNode.LeaveAsync(guild.CurrentUser.VoiceChannel);
                 }
                 var embed = await controlpanel.ControlEmbed();
                 var msgtomod = _TrackingControlPanels[reaction.MessageId].Key;
@@ -322,13 +325,13 @@ namespace DiscordBot.Services
                 var chnl = channel as SocketGuildChannel;
                 var user = reaction.User.Value as SocketGuildUser;
                 if (user.Id != _TrackingSearch[reaction.MessageId].Key) return;
-                var guildId = chnl.Guild.Id;
+                var guild = chnl.Guild;
                 Embed result = null;
-                if (reaction.Emote.Name == "1\u20e3") result = await PlayAsync(_TrackingSearch[reaction.MessageId].Value.ElementAt(0), guildId, user);
-                if (reaction.Emote.Name == "2\u20e3") result = await PlayAsync(_TrackingSearch[reaction.MessageId].Value.ElementAt(1), guildId, user);
-                if (reaction.Emote.Name == "3\u20e3") result = await PlayAsync(_TrackingSearch[reaction.MessageId].Value.ElementAt(2), guildId, user);
-                if (reaction.Emote.Name == "4\u20e3") result = await PlayAsync(_TrackingSearch[reaction.MessageId].Value.ElementAt(3), guildId, user);
-                if (reaction.Emote.Name == "5\u20e3") result = await PlayAsync(_TrackingSearch[reaction.MessageId].Value.ElementAt(4), guildId, user);
+                if (reaction.Emote.Name == "1\u20e3") result = await PlayAsync(_TrackingSearch[reaction.MessageId].Value.ElementAt(0), guild, user);
+                if (reaction.Emote.Name == "2\u20e3") result = await PlayAsync(_TrackingSearch[reaction.MessageId].Value.ElementAt(1), guild, user);
+                if (reaction.Emote.Name == "3\u20e3") result = await PlayAsync(_TrackingSearch[reaction.MessageId].Value.ElementAt(2), guild, user);
+                if (reaction.Emote.Name == "4\u20e3") result = await PlayAsync(_TrackingSearch[reaction.MessageId].Value.ElementAt(3), guild, user);
+                if (reaction.Emote.Name == "5\u20e3") result = await PlayAsync(_TrackingSearch[reaction.MessageId].Value.ElementAt(4), guild, user);
 
                 if (result is null) return;
                 await channel.SendMessageAsync("", false, result);
@@ -339,7 +342,7 @@ namespace DiscordBot.Services
             if (_TrackingControlPanels.ContainsKey(reaction.MessageId))
             {
                 var chnl = channel as SocketGuildChannel;
-                var guildId = chnl.Guild.Id;
+                var guild = chnl.Guild;
                 var controlpanel = _TrackingControlPanels[reaction.MessageId].Value;
                 if (reaction.User.Value.Id != controlpanel.Provider.Id) return;
                 if (reaction.Emote.Name == "🔺") await controlpanel.IncreaseVolumeAsync();
@@ -347,12 +350,12 @@ namespace DiscordBot.Services
                 if (reaction.Emote.Name == "\u23EF") await controlpanel.PauseOrResumeAsync();
                 if (reaction.Emote.Name == "\u23ED") await controlpanel.AddPositionAsync();
                 if (reaction.Emote.Name == "\u23EE") await controlpanel.RemovePositionAsync();
-                if (reaction.Emote.Name == "🔲") await SkipAsync(guildId);
+                if (reaction.Emote.Name == "🔲") await SkipAsync(guild);
                 if (reaction.Emote.Name == "\u274C")
                 {
                     AdminUsers.Remove(reaction.UserId);
                     await channel.DeleteMessageAsync(_TrackingControlPanels[reaction.MessageId].Key);
-                    await _lavaSocketClient.DisconnectAsync(chnl.Guild.CurrentUser.VoiceChannel);
+                    await _lavaNode.LeaveAsync(guild.CurrentUser.VoiceChannel);
                 }
                 var embed = await controlpanel.ControlEmbed();
                 var msgtomod = _TrackingControlPanels[reaction.MessageId].Key;
@@ -379,7 +382,7 @@ namespace DiscordBot.Services
             if (!AdminUsers.ContainsKey(user.Id)) return;
             if (oldstate.VoiceChannel == newState.VoiceChannel) return;
             AdminUsers.Remove(user.Id);
-            await _lavaSocketClient.DisconnectAsync(oldstate.VoiceChannel);
+            await _lavaNode.LeaveAsync(oldstate.VoiceChannel);
         }
         private async Task UpdateTrack(ControlPanel controlPanel, RestUserMessage message)
         {
@@ -411,16 +414,17 @@ namespace DiscordBot.Services
         }
         private async Task ClientReadyAsync()
         {
-            await _lavaSocketClient.StartAsync(_client, new Configuration());
+            await _lavaNode.ConnectAsync();
         }
-        private async Task TrackFinished(LavaPlayer player, LavaTrack track, TrackEndReason reason)
+        private async Task TrackFinished(TrackEndedEventArgs endedEventArgs)
         {
-            if (!reason.ShouldPlayNext())
+            if (!endedEventArgs.Reason.ShouldPlayNext())
                 return;
+            LavaPlayer player = endedEventArgs.Player;
             if (player.Queue.Items.Count() is 0)
             {
                 await player.TextChannel.SendMessageAsync("", false, warnembed.EndQueue());
-                await _lavaSocketClient.DisconnectAsync(player.VoiceChannel);
+                await _lavaNode.LeaveAsync(player.VoiceChannel);
                 await player.TextChannel.SendMessageAsync("", false, warnembed.LeavingRoom(player.VoiceChannel.Name, player.VoiceChannel.CreateInviteAsync().Result.Url));
                 var item = AdminUsers.First(kvp => kvp.Value == player.VoiceChannel.GuildId);
                 AdminUsers.Remove(item.Key);
@@ -428,7 +432,7 @@ namespace DiscordBot.Services
             }
 
             await player.SkipAsync();
-            await player.TextChannel.SendMessageAsync("", false, warnembed.NowPlaying(player.CurrentTrack.Title));
+            await player.TextChannel.SendMessageAsync("", false, warnembed.NowPlaying(player.Track.Title));
         }
         private Task LogAsync(LogMessage logMessage)
         {
