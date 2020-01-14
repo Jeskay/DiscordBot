@@ -151,6 +151,7 @@ namespace DiscordBot.Services.Common
         public async Task<Embed> ControlEmbed()
         {
             await NewSong();
+            _embed.Fields[0].Value = $"> [ {_player.Volume} ]";
             _embed.Fields[1].Value = $"> [{Writetime(_player.Track.Position, _player.Track.Duration)} / {Writetime(_player.Track.Duration, _player.Track.Duration)}]";
             _embed.ImageUrl = Position(_player.Track.Position, _player.Track.Duration);
             return _embed.Build();
@@ -162,6 +163,7 @@ namespace DiscordBot.Services.Common
             _player = player;
             _embed = new EmbedBuilder();
             _embed.Color = Color.DarkPurple;
+            _player.UpdateVolumeAsync(100);
             _embed.AddField("Громкость", $"> [ {_player.Volume} ]");
             _embed.AddField("Текущая позиция", $"> [{Writetime(_player.Track.Position, _player.Track.Duration)} / {Writetime(_player.Track.Duration, _player.Track.Duration)}]");
             _embed.Footer = new EmbedFooterBuilder();

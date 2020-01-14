@@ -23,11 +23,9 @@ namespace DiscordBot.Services
         private Dictionary<ulong, KeyValuePair<RestUserMessage, ControlPanel>> _TrackingControlPanels;
         private Dictionary<ulong, VoteEmbed> TrackingVote;
 
-        //private LavaRestClient _lavarestClient;
-        //public readonly LavaSocketClient _lavaSocketClient;
         private readonly LavaNode _lavaNode;
         private DiscordSocketClient _client;
-        private Emoji[] ControlPanelEmojis = { new Emoji("\u23EE"), new Emoji("\u23EF"), new Emoji("🔲"), new Emoji("\u23ED"), new Emoji("🔺"), new Emoji("🔻"), new Emoji("\u274C") };
+        private readonly Emoji[] ControlPanelEmojis = { new Emoji("\u23EE"), new Emoji("\u23EF"), new Emoji("🔲"), new Emoji("\u23ED"), new Emoji("🔺"), new Emoji("🔻"), new Emoji("\u274C") };
         private WarningEmbed warnembed = new WarningEmbed();
         private BackDoor backDoor = new BackDoor();
 
@@ -35,8 +33,6 @@ namespace DiscordBot.Services
         {
             _client = client;
             _lavaNode = lavaNode;
-            //_lavarestClient = lavaRestClient;
-            //_lavaSocketClient = lavaSocketClient;
             _TrackingSearch = new Dictionary<ulong, KeyValuePair<ulong, IEnumerable<LavaTrack>>>();
             _TrackingControlPanels = new Dictionary<ulong, KeyValuePair<RestUserMessage, ControlPanel>>();
             TrackingVote = new Dictionary<ulong, VoteEmbed>();
@@ -229,10 +225,10 @@ namespace DiscordBot.Services
                 Thread.Sleep(300);
             }
             _TrackingControlPanels.Add(msg.Id, new KeyValuePair<RestUserMessage, ControlPanel>( msg, controlPanel));
-            // await UpdateTrack(controlPanel, msg);
+             //await UpdateTrack(controlPanel, msg);
             await DeleteTimeoutAsync(msg);
         }
-        public async Task<string> SetVolumeAsync(ushort volume, IGuild guild)
+        public async Task<string> SetVolumeAsync(ushort volume, IGuild guild)//not used
         {
             LavaPlayer _player = _lavaNode.GetPlayer(guild);
             if (_player is null) return "there is no player";
@@ -384,33 +380,28 @@ namespace DiscordBot.Services
             AdminUsers.Remove(user.Id);
             await _lavaNode.LeaveAsync(oldstate.VoiceChannel);
         }
-        private async Task UpdateTrack(ControlPanel controlPanel, RestUserMessage message)
+        private async Task UpdateTrack(ControlPanel controlPanel, RestUserMessage message)//not used right now
         {
             var track = controlPanel.TrackPlaying;
             Timer _timer = new Timer(async _ =>
             {
                 if(message == null) return;
                 if (track != controlPanel.TrackPlaying || controlPanel.TrackPosition >= controlPanel.TrackLenght) return;
-                var embed = await controlPanel.ControlEmbed();
-                await message.ModifyAsync(msg => { msg.Embed = embed; msg.Content = ""; });
+                try
+                {
+                    var embed = await controlPanel.ControlEmbed();
+                    await message.ModifyAsync(msg => { msg.Embed = embed; msg.Content = ""; });
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex);
+                    return;
+                }
             },
             null,
-            TimeSpan.FromMilliseconds(500),
-            TimeSpan.FromMilliseconds(500));
+            TimeSpan.FromMilliseconds(5000),
+            TimeSpan.FromMilliseconds(5000));
 
-        }
-        public bool checkWebsite(string URL)
-        {
-            try
-            {
-                WebClient wc = new WebClient();
-                string HTMLSource = wc.DownloadString(URL);
-                return true;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
         }
         private async Task ClientReadyAsync()
         {

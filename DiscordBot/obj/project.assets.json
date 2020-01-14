@@ -1389,7 +1389,7 @@
           "lib/netstandard1.3/System.Xml.XDocument.dll": {}
         }
       },
-      "Victoria/5.1.0": {
+      "Victoria/5.1.2": {
         "type": "package",
         "dependencies": {
           "Discord.Net.WebSocket": "2.1.1"
@@ -4891,17 +4891,17 @@
         "system.xml.xdocument.nuspec"
       ]
     },
-    "Victoria/5.1.0": {
-      "sha512": "WFERvy4P9hHY2tCy6BTHBvuyqwEMvNFHCueX9ScXWYxJh8bVUJIHjJvpVvnejuGniziHXPA4Y5kOuRRsEFDvBw==",
+    "Victoria/5.1.2": {
+      "sha512": "P1KeLaiJOcdJUpyyHN8bAC5hy7yt/bzVFeub7+rO82gr3E7YsmMH2bvklR7eR8FO5PWqGeweDePXa23pbNlJ3Q==",
       "type": "package",
-      "path": "victoria/5.1.0",
+      "path": "victoria/5.1.2",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
         "Logo.png",
         "lib/netcoreapp3.0/Victoria.dll",
         "lib/netcoreapp3.0/Victoria.xml",
-        "victoria.5.1.0.nupkg.sha512",
+        "victoria.5.1.2.nupkg.sha512",
         "victoria.nuspec"
       ]
     }
@@ -4910,7 +4910,7 @@
     ".NETCoreApp,Version=v3.1": [
       "Discord.Net >= 2.1.1",
       "System.Drawing.Common >= 4.5.1",
-      "Victoria >= 5.1.0",
+      "Victoria >= 5.1.2",
       "libsodium >= 1.0.17.1"
     ]
   },
@@ -4965,7 +4965,7 @@
           },
           "Victoria": {
             "target": "Package",
-            "version": "[5.1.0, )"
+            "version": "[5.1.2, )"
           },
           "libsodium": {
             "target": "Package",

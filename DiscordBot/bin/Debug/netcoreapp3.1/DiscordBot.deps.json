@@ -10,7 +10,7 @@
         "dependencies": {
           "Discord.Net": "2.1.1",
           "System.Drawing.Common": "4.5.1",
-          "Victoria": "5.1.0",
+          "Victoria": "5.1.2",
           "libsodium": "1.0.17.1"
         },
         "runtime": {
@@ -872,14 +872,14 @@
           "System.Xml.ReaderWriter": "4.3.0"
         }
       },
-      "Victoria/5.1.0": {
+      "Victoria/5.1.2": {
         "dependencies": {
           "Discord.Net.WebSocket": "2.1.1"
         },
         "runtime": {
           "lib/netcoreapp3.0/Victoria.dll": {
-            "assemblyVersion": "5.1.0.0",
-            "fileVersion": "5.1.0.0"
+            "assemblyVersion": "5.1.2.0",
+            "fileVersion": "5.1.2.0"
           }
         }
       }
@@ -1500,12 +1500,12 @@
       "path": "system.xml.xdocument/4.3.0",
       "hashPath": "system.xml.xdocument.4.3.0.nupkg.sha512"
     },
-    "Victoria/5.1.0": {
+    "Victoria/5.1.2": {
       "type": "package",
       "serviceable": true,
-      "sha512": "sha512-WFERvy4P9hHY2tCy6BTHBvuyqwEMvNFHCueX9ScXWYxJh8bVUJIHjJvpVvnejuGniziHXPA4Y5kOuRRsEFDvBw==",
-      "path": "victoria/5.1.0",
-      "hashPath": "victoria.5.1.0.nupkg.sha512"
+      "sha512": "sha512-P1KeLaiJOcdJUpyyHN8bAC5hy7yt/bzVFeub7+rO82gr3E7YsmMH2bvklR7eR8FO5PWqGeweDePXa23pbNlJ3Q==",
+      "path": "victoria/5.1.2",
+      "hashPath": "victoria.5.1.2.nupkg.sha512"
     }
   }
 }

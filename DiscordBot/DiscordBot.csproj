@@ -21,7 +21,7 @@
     <PackageReference Include="Discord.Net" Version="2.1.1" />
     <PackageReference Include="libsodium" Version="1.0.17.1" />
     <PackageReference Include="System.Drawing.Common" Version="4.5.1" />
-    <PackageReference Include="Victoria" Version="5.1.0" />
+    <PackageReference Include="Victoria" Version="5.1.2" />
   </ItemGroup>
 
   <ItemGroup>
