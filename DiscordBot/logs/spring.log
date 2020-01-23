@@ -313,3 +313,9 @@ Caused by: java.lang.InterruptedException: null
 2020-01-23 22:47:14.229  INFO 15216 --- [XNIO-1 I/O-6] lavalink.server.io.SocketServer          : Connection closed from /127.0.0.1:62090 -- CloseStatus[code=1006, reason=]
 2020-01-23 22:47:14.230  INFO 15216 --- [XNIO-1 I/O-6] lavalink.server.io.SocketContext         : Shutting down 0 playing players.
 2020-01-23 22:47:14.230  INFO 15216 --- [XNIO-1 I/O-6] c.s.d.l.tools.GarbageCollectionMonitor   : GC monitoring disabled.
+2020-01-23 23:38:42.348  INFO 15216 --- [XNIO-1 task-4] l.server.io.HandshakeInterceptorImpl     : Incoming connection from /127.0.0.1:62517
+2020-01-23 23:38:42.353  INFO 15216 --- [XNIO-1 task-4] c.s.d.l.tools.GarbageCollectionMonitor   : GC monitoring enabled, reporting results every 2 minutes.
+2020-01-23 23:38:42.358  INFO 15216 --- [XNIO-1 task-4] lavalink.server.io.SocketServer          : Connection successfully established from /127.0.0.1:62517
+2020-01-23 23:39:17.259  INFO 15216 --- [XNIO-1 I/O-1] lavalink.server.io.SocketServer          : Connection closed from /127.0.0.1:62517 -- CloseStatus[code=1006, reason=]
+2020-01-23 23:39:17.259  INFO 15216 --- [XNIO-1 I/O-1] lavalink.server.io.SocketContext         : Shutting down 0 playing players.
+2020-01-23 23:39:17.260  INFO 15216 --- [XNIO-1 I/O-1] c.s.d.l.tools.GarbageCollectionMonitor   : GC monitoring disabled.

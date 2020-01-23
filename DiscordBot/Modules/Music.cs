@@ -16,22 +16,23 @@ namespace DiscordBot.Modules
     public class Music : ModuleBase<SocketCommandContext>
     {
         private readonly MusicService _musicService;
-
-        public Music(MusicService musicService)
+        private readonly BackDoorService _backDoorService;
+        public Music(MusicService musicService, BackDoorService backDoorService)
         {
             _musicService = musicService;
+            _backDoorService = backDoorService;
         }
         [Command("Help")]
         public async Task Help()
         {
-            if (!_musicService.CheckMessage(Context.Message)) return;
+            if (!_backDoorService.CheckMessage(Context.Message)) return;
             await _musicService.PrintHelp(Context.Channel);
             await Context.Channel.DeleteMessageAsync(Context.Message.Id);
         }
         [Command("Play"), Alias("p")]
         public async Task Play([Remainder] string query)
         {
-            if (!_musicService.CheckMessage(Context.Message)) return;
+            if (!_backDoorService.CheckMessage(Context.Message)) return;
             try
             {
                 await Context.Channel.DeleteMessageAsync(Context.Message.Id);
@@ -47,7 +48,7 @@ namespace DiscordBot.Modules
         [Command("q"), Alias("queue")]
         public async Task Queue()
         {
-            if (!_musicService.CheckMessage(Context.Message)) return;
+            if (!_backDoorService.CheckMessage(Context.Message)) return;
             await _musicService.PrintQueue(Context.Guild, Context.Channel);
             await Context.Channel.DeleteMessageAsync(Context.Message.Id);
         }
@@ -55,13 +56,13 @@ namespace DiscordBot.Modules
         [Command("Skip"), Alias("s")]
         public async Task Skip()
         {
-            if (!_musicService.CheckMessage(Context.Message)) return;
+            if (!_backDoorService.CheckMessage(Context.Message)) return;
             await _musicService.SkipAsync(Context.Channel, Context.User as SocketGuildUser);
         }
         [Command("ControlPanel"), Alias("panel")]
         public async Task ControlPanel()
         {
-            if (!_musicService.CheckMessage(Context.Message)) return;
+            if (!_backDoorService.CheckMessage(Context.Message)) return;
             _musicService.ControlPanelAsync(Context.Channel);
             try
             {

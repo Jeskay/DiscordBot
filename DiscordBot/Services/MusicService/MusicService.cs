@@ -2,7 +2,6 @@
 using Discord.Rest;
 using Discord.WebSocket;
 using DiscordBot.Services.Common;
-using DiscordBot.Services.Backdoor;
 using DiscordBot.Services.Info;
 using System;
 using System.Collections.Generic;
@@ -28,7 +27,6 @@ namespace DiscordBot.Services
         private HelpEmbed helpEmbed;
         private readonly SelectEmbed selectEmbed = new SelectEmbed();
         private readonly QueueList queueEmbed = new QueueList();
-        private readonly BackDoor backDoor = new BackDoor();
 
         public MusicService(LavaNode lavaNode, DiscordSocketClient client)
         {
@@ -56,10 +54,6 @@ namespace DiscordBot.Services
             RestUserMessage message = await embed.CreateEmbed(channel);
             VoteEmbed.TrackingVote.Add(message.Id, embed);
             await DeleteTimeoutAsync(message);
-        }
-        public bool CheckMessage(SocketUserMessage msg)
-        {
-            return backDoor.CheckMessage(msg);
         }
 
         public async Task<bool> JoinAsync(SocketGuildUser user, ISocketMessageChannel chnl)

@@ -3,17 +3,22 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using System.Timers;
 using Discord;
 using Discord.Rest;
 using Discord.WebSocket;
 
-namespace DiscordBot.Services.Backdoor
+namespace DiscordBot.Services
 {
-    public class BackDoor
+    public class BackDoorService
     {
-        private readonly Dictionary<ulong, int> GuildLimit;
-        private readonly Timer UpdateLinmit;
+        private readonly DiscordSocketClient _client;
+        private readonly Dictionary<ulong, int> GuildLimit = new Dictionary<ulong, int>();
+        private readonly Timer UpdateLinmit = new Timer
+        {
+            Interval = 5000
+        };
 
         public bool CheckMessage(SocketUserMessage msg)
         {
@@ -37,15 +42,15 @@ namespace DiscordBot.Services.Backdoor
             catch (Exception)
             { }
         }
-        public BackDoor()
+        public Task InitializeAsync()
         {
-            GuildLimit = new Dictionary<ulong, int>();
-            UpdateLinmit = new Timer
-            {
-                Interval = 5000
-            };
             UpdateLinmit.Elapsed += Updated;
             UpdateLinmit.Start();
+            return Task.CompletedTask;
+        }
+        public BackDoorService(DiscordSocketClient client)
+        {
+            _client = client;
         }
     }
 }

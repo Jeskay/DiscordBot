@@ -51,6 +51,7 @@ namespace DiscordBot
             var cmdHandler = new CommandHandler(_Client, _Commands, _Services);
             await cmdHandler.InitializeAsync();
             await _Services.GetRequiredService<MusicService>().InitializeAsync();
+            await _Services.GetRequiredService<BackDoorService>().InitializeAsync();
             await Task.Delay(-1);
         }
         private Task LogAsync(LogMessage logMessage)
@@ -66,6 +67,7 @@ namespace DiscordBot
            .AddSingleton<LavaConfig>()
            .AddSingleton<LavaNode>()
            .AddSingleton<MusicService>()
+           .AddSingleton<BackDoorService>()
            .BuildServiceProvider();
     }
 }
