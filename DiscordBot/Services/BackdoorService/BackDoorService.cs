@@ -12,8 +12,8 @@ namespace DiscordBot.Services.Backdoor
 {
     public class BackDoor
     {
-        private Dictionary<ulong, int> GuildLimit;
-        private Timer UpdateLinmit;
+        private readonly Dictionary<ulong, int> GuildLimit;
+        private readonly Timer UpdateLinmit;
 
         public bool CheckMessage(SocketUserMessage msg)
         {
@@ -40,8 +40,10 @@ namespace DiscordBot.Services.Backdoor
         public BackDoor()
         {
             GuildLimit = new Dictionary<ulong, int>();
-            UpdateLinmit = new Timer();
-            UpdateLinmit.Interval = 5000;
+            UpdateLinmit = new Timer
+            {
+                Interval = 5000
+            };
             UpdateLinmit.Elapsed += Updated;
             UpdateLinmit.Start();
         }

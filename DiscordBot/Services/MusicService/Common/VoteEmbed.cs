@@ -4,6 +4,7 @@ using Discord.WebSocket;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Victoria;
 
@@ -11,14 +12,15 @@ namespace DiscordBot.Services.Common
 {
     public class VoteEmbed : IEmbeds
     {
-        
-        private SocketGuildUser _user;
-        private LavaPlayer _player;
+        public static Dictionary<ulong, VoteEmbed> TrackingVote = new Dictionary<ulong, VoteEmbed>();
+        private readonly SocketGuildUser user;
+        private readonly LavaPlayer _player;
+        private readonly Mutex voteMutex = new Mutex();
         public EmbedBuilder embedBuilder { get; }
         public int Votes { get; set; }
-        public IVoiceChannel channel { get; private set; }
+        public IVoiceChannel Channel { get; private set; }
 
-        public async Task<Embed> Skip()
+        private async Task<Embed> Skip()
         {
             LavaTrack oldtrack = _player.Track;
             if (_player is null || _player.Queue.Count == 0)
@@ -34,12 +36,12 @@ namespace DiscordBot.Services.Common
             embedBuilder.Description = $"пропущено {oldtrack.Title}, сейчас играет {_player.Track.Title}.";
             return embedBuilder.Build();
         }
-        public async Task<Dictionary<ulong, VoteEmbed>> AddVote(SocketReaction reaction, ISocketMessageChannel messageChannel, Dictionary<ulong, VoteEmbed> TrackingVote)
+        public async Task<Dictionary<ulong, VoteEmbed>> AddVote(SocketReaction reaction, ISocketMessageChannel messageChannel)
         {
             if (reaction.Emote.Name != "\u2611") return TrackingVote;
             try
             {
-                await channel.GetUserAsync(reaction.UserId);
+                await Channel.GetUserAsync(reaction.UserId);
 
             }
             catch (Exception)
@@ -47,33 +49,37 @@ namespace DiscordBot.Services.Common
                 return TrackingVote;
             }
             Votes++;
-            var chnl = channel as SocketGuildChannel;
+            var chnl = Channel as SocketGuildChannel;
             int users = chnl.Users.Count - 1;
             if (Votes >= (users / 2.0))
             {
                 await messageChannel.SendMessageAsync("", false, await Skip());
+                voteMutex.WaitOne();
                 TrackingVote.Remove(reaction.MessageId);
+                voteMutex.ReleaseMutex();
                 await messageChannel.DeleteMessageAsync(reaction.MessageId);
             }
             return TrackingVote;
         }
-        public async Task<Dictionary<ulong, VoteEmbed>> RemoveVote(SocketReaction reaction, Dictionary<ulong, VoteEmbed> TrackingVote)//семафор или мьютекс со статическим словарем
+        public async Task<Dictionary<ulong, VoteEmbed>> RemoveVote(SocketReaction reaction)//семафор или мьютекс со статическим словарем
         {
             if (reaction.Emote.Name != "\u2611") return TrackingVote;
+            voteMutex.WaitOne();
             try
             {
-                await TrackingVote[reaction.MessageId].channel.GetUserAsync(reaction.UserId);
+                await TrackingVote[reaction.MessageId].Channel.GetUserAsync(reaction.UserId);
             }
             catch (Exception)
             {
                 return TrackingVote;
             }
             TrackingVote[reaction.MessageId].Votes--;
+            voteMutex.ReleaseMutex();
             return TrackingVote;
         }
         public async Task<RestUserMessage> CreateEmbed(ISocketMessageChannel channel)
         {
-            embedBuilder.Description = $"{_user.Mention} начал голосование за пропуск песни **{_player.Track.Title}**. \n Нажмите на реакцию для пропуска трека.";
+            embedBuilder.Description = $"{user.Mention} начал голосование за пропуск песни **{_player.Track.Title}**. \n Нажмите на реакцию для пропуска трека.";
             RestUserMessage msg = await channel.SendMessageAsync("", false, embedBuilder.Build());
             await msg.AddReactionAsync(new Emoji("\u2611"));
             return msg;
@@ -87,12 +93,14 @@ namespace DiscordBot.Services.Common
         public VoteEmbed(SocketGuildUser user, LavaPlayer player, SocketSelfUser selfuser)
         {
             embedBuilder = new EmbedBuilder();
-            _user = user;
+            this.user = user;
             _player = player;
-            channel = player.VoiceChannel;
-            embedBuilder.Footer = new EmbedFooterBuilder();
-            embedBuilder.Footer.Text = "Для просмотра плейлиста | . q";
-            embedBuilder.Footer.IconUrl = selfuser.GetAvatarUrl();
+            Channel = player.VoiceChannel;
+            embedBuilder.Footer = new EmbedFooterBuilder
+            {
+                Text = "Для просмотра плейлиста | . q",
+                IconUrl = selfuser.GetAvatarUrl()
+            };
         }
     }
 }

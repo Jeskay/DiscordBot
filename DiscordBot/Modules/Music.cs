@@ -15,8 +15,7 @@ namespace DiscordBot.Modules
 {
     public class Music : ModuleBase<SocketCommandContext>
     {
-        private MusicService _musicService;
-
+        private readonly MusicService _musicService;
 
         public Music(MusicService musicService)
         {

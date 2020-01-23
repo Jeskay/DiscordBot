@@ -85,10 +85,12 @@ namespace DiscordBot.Services.Info
         public SelectEmbed()
         {
             _TrackingSearch = new Dictionary<ulong, KeyValuePair<ulong, IEnumerable<LavaTrack>>>();
-            embedBuilder = new EmbedBuilder();
-            embedBuilder.Footer = new EmbedFooterBuilder();
-            embedBuilder.Author = new EmbedAuthorBuilder();
-            embedBuilder.Color = Color.Green;
+            embedBuilder = new EmbedBuilder
+            {
+                Footer = new EmbedFooterBuilder(),
+                Author = new EmbedAuthorBuilder(),
+                Color = Color.Green
+            };
         }
     }
 }

@@ -33,8 +33,7 @@ namespace DiscordBot
             var argPos = 0;
             if (socketMessage.Author.IsBot) return;
 
-            var userMessage = socketMessage as SocketUserMessage;
-            if (userMessage is null)
+            if (!(socketMessage is SocketUserMessage userMessage))
                 return;
 
             if (!(userMessage.HasMentionPrefix(_client.CurrentUser, ref argPos) || userMessage.HasStringPrefix(prefix, ref argPos)))

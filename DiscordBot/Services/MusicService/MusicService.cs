@@ -20,11 +20,10 @@ namespace DiscordBot.Services
     public class MusicService
     {
         public Dictionary<ulong, ulong> AdminUsers = new Dictionary<ulong, ulong>();
-        private Dictionary<ulong, KeyValuePair<RestUserMessage, ControlPanel>> _TrackingControlPanels;
-        private Dictionary<ulong, VoteEmbed> TrackingVote;
+        private readonly Dictionary<ulong, KeyValuePair<RestUserMessage, ControlPanel>> _TrackingControlPanels;
 
         private readonly LavaNode _lavaNode;
-        private DiscordSocketClient _client;
+        private readonly DiscordSocketClient _client;
         private readonly WarningEmbed warnembed = new WarningEmbed();
         private HelpEmbed helpEmbed;
         private readonly SelectEmbed selectEmbed = new SelectEmbed();
@@ -36,7 +35,6 @@ namespace DiscordBot.Services
             _client = client;
             _lavaNode = lavaNode;
             _TrackingControlPanels = new Dictionary<ulong, KeyValuePair<RestUserMessage, ControlPanel>>();
-            TrackingVote = new Dictionary<ulong, VoteEmbed>();
         }
         public Task InitializeAsync()
         {
@@ -56,7 +54,7 @@ namespace DiscordBot.Services
             if (player.VoiceChannel != user.VoiceChannel) return;
             VoteEmbed embed = new VoteEmbed(user, player, _client.CurrentUser);
             RestUserMessage message = await embed.CreateEmbed(channel);
-            TrackingVote.Add(message.Id, embed);
+            VoteEmbed.TrackingVote.Add(message.Id, embed);
             await DeleteTimeoutAsync(message);
         }
         public bool CheckMessage(SocketUserMessage msg)
@@ -67,19 +65,21 @@ namespace DiscordBot.Services
         public async Task<bool> JoinAsync(SocketGuildUser user, ISocketMessageChannel chnl)
         {
             var channel = chnl as SocketGuildChannel;
-            RestUserMessage msg = null;
             if (AdminUsers.ContainsValue(channel.Guild.Id))
             {
                 if (user.VoiceChannel != channel.Guild.CurrentUser.VoiceChannel)
                 {
-                    msg = await chnl.SendMessageAsync("", false, warnembed.IsUsing(channel.Guild.CurrentUser.VoiceChannel));
+
+                    RestUserMessage msg = await chnl.SendMessageAsync("", false, warnembed.IsUsing(channel.Guild.CurrentUser.VoiceChannel));
+                    await DeleteTimeoutAsync(msg);
                     return false;
                 }
                 else return true;
             }
             if (user.VoiceChannel is null)
             {
-                msg = await chnl.SendMessageAsync("", false, warnembed.ShouldbeInVoice());
+                RestUserMessage msg = await chnl.SendMessageAsync("", false, warnembed.ShouldbeInVoice());
+                await DeleteTimeoutAsync(msg);
                 return false;
             }
             await _lavaNode.JoinAsync(user.VoiceChannel, channel as ITextChannel);
@@ -89,36 +89,10 @@ namespace DiscordBot.Services
                 await chnl.SendMessageAsync("", false, warnembed.NotEnoughPermission(_client));
                 return false;
             }
-            if (msg != null) await DeleteTimeoutAsync(msg);
             AdminUsers.Add(user.Id, channel.Guild.Id);
 
 
             return true;
-        }
-        public async Task LeaveAsync(SocketGuildUser user, ISocketMessageChannel chnl)
-        {
-            var channel = chnl as SocketGuildChannel;
-            if (!AdminUsers.ContainsValue(channel.Guild.Id))
-            {
-                await chnl.SendMessageAsync("", false, warnembed.NoUserPermission(user.Mention));
-                return;
-            }
-            if(!AdminUsers.ContainsKey(user.Id))
-            {
-                await chnl.SendMessageAsync("", false, warnembed.NoUserPermission(user.Mention));
-                return;
-            }
-            if (user.VoiceChannel is null)
-            {
-                await chnl.SendMessageAsync("", false, warnembed.NoUserPermission(user.Mention));
-                return;
-            }
-            else
-            {
-                await _lavaNode.LeaveAsync(user.VoiceChannel);
-                await chnl.SendMessageAsync("", false, warnembed.LeavingRoom(user.VoiceChannel.Name, user.VoiceChannel.CreateInviteAsync().Result.Url));
-                AdminUsers.Remove(user.Id);
-            }
         }
         public async Task PrintHelp(ISocketMessageChannel messageChannel)
         {
@@ -156,22 +130,6 @@ namespace DiscordBot.Services
                 return warnembed.AddandPlay(track.Title, track.Duration.ToString(), user.Mention);
             }
         }
-        public async Task<string> SkipAsync(IGuild guild)
-        {
-            LavaPlayer _player = _lavaNode.GetPlayer(guild);
-            string oldTrack = _player.Track.Title;
-            if (_player is null || _player.Queue.Items.Count() is 0)
-            {
-                if (_player.Track != null)
-                {
-                    await _player.SeekAsync(_player.Track.Duration);
-                    return $"пропущено {oldTrack}";
-                }
-                return "Плэйлист пуст.";
-            }
-           await _player.SkipAsync();
-           return $"Пропущено: {oldTrack} \nСейчас играет: {_player.Track.Title}";
-        }
         public async Task PrintQueue(SocketGuild guild, ISocketMessageChannel messageChannel)
         {
             LavaPlayer _player = _lavaNode.GetPlayer(guild);
@@ -181,7 +139,7 @@ namespace DiscordBot.Services
         public async Task DeleteTimeoutAsync(RestUserMessage message)
         {
             Thread.Sleep(60000);
-            if (TrackingVote.ContainsKey(message.Id)) TrackingVote.Remove(message.Id);
+            if(VoteEmbed.TrackingVote.ContainsKey(message.Id)) VoteEmbed.TrackingVote.Remove(message.Id);
             selectEmbed.RemoveSelection(message.Id);
             await message.DeleteAsync();
         }
@@ -216,28 +174,10 @@ namespace DiscordBot.Services
                 var controlPanel = _TrackingControlPanels[reaction.MessageId].Value;
                 AdminUsers = await controlPanel.CheckCommand(channel, reaction, _TrackingControlPanels[reaction.MessageId].Key, _lavaNode, AdminUsers);
             }
-            if (TrackingVote.ContainsKey(reaction.MessageId))
+            if (VoteEmbed.TrackingVote.ContainsKey(reaction.MessageId))
             {
-                var Embed = TrackingVote[reaction.MessageId];
-                if (reaction.Emote.Name != "\u2611") return;
-                try
-                {
-                    await Embed.channel.GetUserAsync(reaction.UserId);
-
-                }
-                catch (Exception)
-                {
-                    return;
-                }
-                Embed.Votes++;
-                var chnl = Embed.channel as SocketGuildChannel;
-                int users = chnl.Users.Count - 1;
-                if (Embed.Votes >= ( users / 2.0))
-                {
-                    await channel.SendMessageAsync("", false, await Embed.Skip());
-                    TrackingVote.Remove(reaction.MessageId);
-                    await channel.DeleteMessageAsync(reaction.MessageId);
-                }
+                var Embed = VoteEmbed.TrackingVote[reaction.MessageId];
+                await Embed.AddVote(reaction, channel);
             }
         }
         private async Task OnReactionRemoved(Cacheable<IUserMessage, ulong> cache, ISocketMessageChannel channel, SocketReaction reaction)
@@ -261,19 +201,9 @@ namespace DiscordBot.Services
                 AdminUsers = await controlPanel.CheckCommand(channel, reaction, _TrackingControlPanels[reaction.MessageId].Key, _lavaNode, AdminUsers);
 
             }
-            if (TrackingVote.ContainsKey(reaction.MessageId) )
+            if (VoteEmbed.TrackingVote.ContainsKey(reaction.MessageId) )
             {
-                if (reaction.Emote.Name != "\u2611") return;
-                try
-                {
-                    await TrackingVote[reaction.MessageId].channel.GetUserAsync(reaction.UserId);
-
-                }
-                catch (Exception)
-                {
-                    return;
-                }
-                TrackingVote[reaction.MessageId].Votes--;
+                await VoteEmbed.TrackingVote[reaction.MessageId].RemoveVote(reaction);
             }
         }
         private async Task UserVoiceStateUpdate(SocketUser user, SocketVoiceState oldstate, SocketVoiceState newState)
@@ -283,7 +213,7 @@ namespace DiscordBot.Services
             AdminUsers.Remove(user.Id);
             await _lavaNode.LeaveAsync(oldstate.VoiceChannel);
         }
-        private async Task UpdateTrack(ControlPanel controlPanel, RestUserMessage message)//not used right now
+        /*private async Task UpdateTrack(ControlPanel controlPanel, RestUserMessage message)//not used right now
         {
             Timer _timer = new Timer(async _ =>
             {
@@ -302,7 +232,7 @@ namespace DiscordBot.Services
             TimeSpan.FromMilliseconds(5000),
             TimeSpan.FromMilliseconds(5000));
 
-        }
+        }*/
         private async Task ClientReadyAsync()
         {
             await _lavaNode.ConnectAsync();

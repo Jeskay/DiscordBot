@@ -54,10 +54,12 @@ namespace DiscordBot.Services.Info
 
         public QueueList()
         {
-            embedBuilder = new EmbedBuilder();
-            embedBuilder.Author = new EmbedAuthorBuilder();
-            embedBuilder.Footer = new EmbedFooterBuilder();
-            embedBuilder.Color = Color.DarkPurple;
+            embedBuilder = new EmbedBuilder
+            {
+                Author = new EmbedAuthorBuilder(),
+                Footer = new EmbedFooterBuilder(),
+                Color = Color.DarkPurple
+            };
         }
     }
 }

@@ -8,7 +8,7 @@ namespace DiscordBot.Services.Info
 {
     public class WarningEmbed
     {
-        private EmbedBuilder embedBuilder;
+        private readonly EmbedBuilder embedBuilder;
         public Embed ShouldbeInVoice()
         {
             embedBuilder.Color = Color.Red;
@@ -72,8 +72,10 @@ namespace DiscordBot.Services.Info
         }
         public WarningEmbed()
         {
-            embedBuilder = new EmbedBuilder();
-            embedBuilder.Footer = new EmbedFooterBuilder();
+            embedBuilder = new EmbedBuilder
+            {
+                Footer = new EmbedFooterBuilder()
+            };
         }
     }
 }
