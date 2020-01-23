@@ -8,24 +8,47 @@ using Discord.WebSocket;
 using System.Threading.Tasks;
 using System.Threading;
 using System.Linq;
+using Discord.Rest;
 
 namespace DiscordBot.Services.Common
 {
-    public class ControlPanel
+    public class ControlPanel : IEmbeds
     {
-        private LavaPlayer _player;
-        private EmbedBuilder _embed;
-        private const int PositionChange = 10;
-        private const int VolumeChange = 20;
-        private const string botname = "Челик";
+        public EmbedBuilder embedBuilder { get; }
+
+        private readonly PlayerController playerController;
         private const string SiteURL = "https://docs.google.com";
+        private readonly Emoji[] ControlPanelEmojis = 
+            { 
+            new Emoji("\u23EE"),
+            new Emoji("\u23EF"),
+            new Emoji("🔲"),
+            new Emoji("\u23ED"),
+            new Emoji("🔺"),
+            new Emoji("🔻"),
+            new Emoji("\u274C")
+            };
 
         public SocketGuildUser Provider { get; private set; }
-        public bool Repeat { get; set; }
+   
         private string Writetime(TimeSpan time, TimeSpan totaltime)
         {
             if (totaltime >= new TimeSpan(1, 0, 0)) return (time.Hours < 10 ? "0" + time.Hours  : time.Hours.ToString()) + ":" + (time.Minutes < 10 ? "0" + time.Minutes  : time.Minutes.ToString()) + ":" + (time.Seconds < 10 ? "0" + time.Seconds : time.Seconds.ToString());
             else return (time.Minutes < 10 ? "0" + time.Minutes : time.Minutes.ToString()) + ":" + (time.Seconds < 10 ? "0" + time.Seconds : time.Seconds.ToString());
+        }
+        private async Task Update()
+        {
+            embedBuilder.Author = new EmbedAuthorBuilder
+            {
+                Name = playerController.Track.Author
+            };
+            embedBuilder.Description = $"{playerController.Track.Title}\n[Открыть плейлист]({SiteURL}) | .q";//ссылка на видео { _player.CurrentTrack.Uri.ToString()}
+            embedBuilder.ThumbnailUrl = await playerController.Track.FetchArtworkAsync();
+            embedBuilder.Author.IconUrl = embedBuilder.ThumbnailUrl;
+            embedBuilder.Author.IconUrl = embedBuilder.ThumbnailUrl;
+            embedBuilder.Fields[0].Value = $"> [ {playerController.Volume} ]";
+            embedBuilder.Fields[1].Value = $"> [{Writetime(playerController.Track.Position, playerController.Track.Duration)} / {Writetime(playerController.Track.Duration, playerController.Track.Duration)}]";
+            embedBuilder.ImageUrl = Position(playerController.Track.Position, playerController.Track.Duration);
         }
         private string Position(TimeSpan position, TimeSpan Lenght)
         {
@@ -59,117 +82,113 @@ namespace DiscordBot.Services.Common
             }
             return null;
         }
-        public LavaTrack TrackPlaying
-        {
-            get
-            {
-                return _player.Track;
-            }
-        }
-        public TimeSpan TrackPosition
-        {
-            get
-            {
-                return _player.Track.Position;
-            }
-        }
-        public TimeSpan TrackLenght
-        {
-            get
-            {
-                return _player.Track.Duration;
-            }
-        }
         
         public async Task AddPositionAsync()
         {
-            if (_player is null) return;
-            TimeSpan time = new TimeSpan(0, 0, (int)(_player.Track.Duration.TotalSeconds * (PositionChange / 100.0)));
-            if (!(_player.Track.Position + time >= _player.Track.Duration))
-                await _player.SeekAsync(_player.Track.Position + time);
-
-            _embed.Fields[1].Value = $"> [{Writetime(_player.Track.Position, _player.Track.Duration)} / {Writetime(_player.Track.Duration, _player.Track.Duration)}]";
-            _embed.ImageUrl = Position(_player.Track.Position, _player.Track.Duration);
+            if (await playerController.AddPositionAsync())
+            {
+                embedBuilder.Fields[1].Value = $"> [{Writetime(playerController.Track.Position, playerController.Track.Duration)} / {Writetime(playerController.Track.Duration, playerController.Track.Duration)}]";
+                embedBuilder.ImageUrl = Position(playerController.Track.Position, playerController.Track.Duration);
+            }
         }
 
         public async Task RemovePositionAsync()
         {
-            if (_player is null) return;
-            TimeSpan time = new TimeSpan(0, 0, (int)(_player.Track.Duration.TotalSeconds * (PositionChange / 100.0)));
-            if (!(_player.Track.Position - time <= new TimeSpan(0, 0, 0)))
-                await _player.SeekAsync(_player.Track.Position - time);
-
-            _embed.Fields[1].Value = $"> [{Writetime(_player.Track.Position, _player.Track.Duration)} / {Writetime(_player.Track.Duration, _player.Track.Duration)}]";
-            _embed.ImageUrl = Position(_player.Track.Position, _player.Track.Duration);
+            if (await playerController.RemovePositionAsync())
+            {
+                embedBuilder.Fields[1].Value = $"> [{Writetime(playerController.Track.Position, playerController.Track.Duration)} / {Writetime(playerController.Track.Duration, playerController.Track.Duration)}]";
+                embedBuilder.ImageUrl = Position(playerController.Track.Position, playerController.Track.Duration);
+            }
         }
 
         public async Task IncreaseVolumeAsync()
         {
-            if (_player is null) return;
-            ushort volume = Convert.ToUInt16(_player.Volume + VolumeChange);
-            if (volume > 150) volume = 150;
-            await _player.UpdateVolumeAsync(volume);
-            _embed.Fields[0].Value = $"> [ {_player.Volume} ]";
+            if(await playerController.IncreaseVolumeAsync())
+                embedBuilder.Fields[0].Value = $"> [ {playerController.Volume} ]";
         }
 
         public async Task DecreaseVolumeAsync()
         {
-            if (_player is null) return;
-            ushort volume = Convert.ToUInt16(_player.Volume - VolumeChange);
-            if (volume < 2) volume = 2;
-            await _player.UpdateVolumeAsync(volume);
-            _embed.Fields[0].Value = $"> [ {_player.Volume} ]";
+            if(await playerController.DecreaseVolumeAsync())
+                embedBuilder.Fields[0].Value = $"> [ {playerController.Volume} ]";
         }
 
         public async Task PauseOrResumeAsync()
         {
-            if (_player is null) return;
-
-            if (_player.PlayerState != PlayerState.Paused)
-                await _player.PauseAsync();
-            
-            else
-                await _player.ResumeAsync();
+            await playerController.PauseOrResumeAsync();
         }
 
         public async Task SkipAsync()
         {
-            Repeat = false;
-            if (_player is null || _player.Queue.Items.Count() is 0) return;
-            await _player.SkipAsync();
-            await NewSong();
+            if(await playerController.SkipAsync())
+                await Update();
         }
-        public async Task NewSong()
+        public async Task<Dictionary<ulong, ulong>> CheckCommand(ISocketMessageChannel channel, SocketReaction reaction, RestUserMessage message, LavaNode lavaNode, Dictionary<ulong, ulong> Providers)//переделать на симофор
         {
-            _embed.Author = new EmbedAuthorBuilder();
-            _embed.Author.Name = _player.Track.Author;
-            _embed.Description = $"{_player.Track.Title}\n[Открыть плейлист]({SiteURL}) | .q";//ссылка на видео { _player.CurrentTrack.Uri.ToString()}
-            _embed.ThumbnailUrl = await _player.Track.FetchArtworkAsync();
-            _embed.Author.IconUrl = _embed.ThumbnailUrl;
-            _embed.Author.IconUrl = _embed.ThumbnailUrl;
+            var guild = (channel as SocketGuildChannel).Guild;
+            if (reaction.User.Value.Id != Provider.Id) return Providers;
+            switch (reaction.Emote.Name)
+            {
+                case ("🔺"):
+                    await IncreaseVolumeAsync();
+                    break;
+                case ("🔻"):
+                    await DecreaseVolumeAsync();
+                    break;
+                case("\u23EF"):
+                    await PauseOrResumeAsync();
+                    break;
+                case("\u23ED"):
+                    await AddPositionAsync();
+                     break;
+                case("\u23EE"):
+                    await RemovePositionAsync();
+                    break;
+                case ("🔲"):
+                    await SkipAsync();
+                    break;
+                case ("\u274C"):
+                    Providers.Remove(reaction.UserId);
+                    await channel.DeleteMessageAsync(reaction.MessageId);
+                    await lavaNode.LeaveAsync(guild.CurrentUser.VoiceChannel);
+                    break;
+            }
+            await ModifyMessage(message);
+            return Providers;
         }
-        public async Task<Embed> ControlEmbed()
+        public async Task<RestUserMessage> CreateEmbed(ISocketMessageChannel messageChannel)
         {
-            await NewSong();
-            _embed.Fields[0].Value = $"> [ {_player.Volume} ]";
-            _embed.Fields[1].Value = $"> [{Writetime(_player.Track.Position, _player.Track.Duration)} / {Writetime(_player.Track.Duration, _player.Track.Duration)}]";
-            _embed.ImageUrl = Position(_player.Track.Position, _player.Track.Duration);
-            return _embed.Build();
+            await Update();
+            RestUserMessage message = await messageChannel.SendMessageAsync("", false, embedBuilder.Build());
+            foreach (var item in ControlPanelEmojis)
+            {
+                await message.AddReactionAsync(item);
+                Thread.Sleep(300);
+            }
+            return message;
+        }
+
+        public async Task ModifyMessage(RestUserMessage message)
+        {
+            await Update();
+            await message.ModifyAsync(msg => { msg.Embed = embedBuilder.Build(); msg.Content = ""; });//костыль
         }
 
         public ControlPanel(LavaPlayer player, SocketGuildUser provider)
         {
             Provider = provider;
-            _player = player;
-            _embed = new EmbedBuilder();
-            _embed.Color = Color.DarkPurple;
-            _player.UpdateVolumeAsync(100);
-            _embed.AddField("Громкость", $"> [ {_player.Volume} ]");
-            _embed.AddField("Текущая позиция", $"> [{Writetime(_player.Track.Position, _player.Track.Duration)} / {Writetime(_player.Track.Duration, _player.Track.Duration)}]");
-            _embed.Footer = new EmbedFooterBuilder();
-            _embed.Footer.Text = $"Управляющий - {Provider.Username}";
-            _embed.ImageUrl = Position(_player.Track.Position, _player.Track.Duration);
-            Repeat = false;
+            playerController = new PlayerController(player);
+            embedBuilder = new EmbedBuilder
+            {
+                Color = Color.DarkPurple
+            };
+            embedBuilder.AddField("Громкость", $"> [ {playerController.Volume} ]");
+            embedBuilder.AddField("Текущая позиция", $"> [{Writetime(playerController.Track.Position, playerController.Track.Duration)} / {Writetime(playerController.Track.Duration, playerController.Track.Duration)}]");
+            embedBuilder.Footer = new EmbedFooterBuilder
+            {
+                Text = $"Управляющий - {Provider.Username}"
+            };
+            embedBuilder.ImageUrl = Position(playerController.Track.Position, playerController.Track.Duration);
         }
     }
 }

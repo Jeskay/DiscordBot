@@ -16,7 +16,7 @@ namespace DiscordBot.Modules
     public class Music : ModuleBase<SocketCommandContext>
     {
         private MusicService _musicService;
-        private Emoji[] ChooseEmojis = { new Emoji("1\u20E3"), new Emoji("2\u20E3"), new Emoji("3\u20E3"), new Emoji("4\u20E3"), new Emoji("5\u20E3") };
+
 
         public Music(MusicService musicService)
         {
@@ -26,7 +26,7 @@ namespace DiscordBot.Modules
         public async Task Help()
         {
             if (!_musicService.CheckMessage(Context.Message)) return;
-            await ReplyAsync("", false, _musicService.PrintHelp());
+            await _musicService.PrintHelp(Context.Channel);
             await Context.Channel.DeleteMessageAsync(Context.Message.Id);
         }
         [Command("Play"), Alias("p")]
@@ -42,29 +42,14 @@ namespace DiscordBot.Modules
 
             }
             if (!await _musicService.JoinAsync(Context.User as SocketGuildUser, Context.Channel)) return;
-            /*if (_musicService.checkWebsite(query))
-            {
-                await ReplyAsync("", false, await _musicService.SearchUrl(query, Context.Guild, Context.User as SocketGuildUser));
-                _musicService.ControlPanelAsync(Context.Channel);
-                return;
-            }*/
-            var r = await _musicService.SearchAsync(query);
-            RestUserMessage msg = await ReplyAsync("", false, _musicService.PrintTracks(r, Context.User as SocketGuildUser)) as RestUserMessage;
-            foreach (var item in ChooseEmojis)
-            {
-                await msg.AddReactionAsync(item);
-                Thread.Sleep(300);
-            }
-            _musicService._TrackingSearch.Add(msg.Id, new KeyValuePair<ulong, IEnumerable<LavaTrack>>(Context.User.Id, r));
-            await _musicService.DeleteTimeoutAsync(msg);
 
+            await _musicService.PrintTracks(await _musicService.SearchAsync(query), Context.User as SocketGuildUser, Context.Channel);
         }
         [Command("q"), Alias("queue")]
         public async Task Queue()
         {
             if (!_musicService.CheckMessage(Context.Message)) return;
-            var result = _musicService.PrintQueue(Context.Guild);
-            await ReplyAsync("", false, result);
+            await _musicService.PrintQueue(Context.Guild, Context.Channel);
             await Context.Channel.DeleteMessageAsync(Context.Message.Id);
         }
 

@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace DiscordBot.Services.Common
+namespace DiscordBot.Services.Info
 {
     public class WarningEmbed
     {
