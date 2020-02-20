@@ -49,8 +49,16 @@ namespace DiscordBot.Modules
         public async Task Queue()
         {
             if (!_backDoorService.CheckMessage(Context.Message)) return;
-            await _musicService.PrintQueue(Context.Guild, Context.Channel);
-            await Context.Channel.DeleteMessageAsync(Context.Message.Id);
+            try 
+            {
+                await _musicService.PrintQueue(Context.Guild, Context.Channel);
+                await Context.Channel.DeleteMessageAsync(Context.Message.Id);
+
+            }
+            catch (Exception)
+            { 
+            
+            }
         }
 
         [Command("Skip"), Alias("s")]

@@ -135,7 +135,15 @@ namespace DiscordBot.Services
             Thread.Sleep(60000);
             if(VoteEmbed.TrackingVote.ContainsKey(message.Id)) VoteEmbed.TrackingVote.Remove(message.Id);
             selectEmbed.RemoveSelection(message.Id);
-            await message.DeleteAsync();
+            try
+            {
+                await message.DeleteAsync();
+            }
+            catch (Discord.Net.HttpException)
+            {
+                return;
+            }
+            
         }
         public async void ControlPanelAsync(ISocketMessageChannel channel)
         {
@@ -144,6 +152,12 @@ namespace DiscordBot.Services
             var key = AdminUsers.Where(kvp => kvp.Value == chnl.Guild.Id).Select(kvp => kvp.Key).FirstOrDefault();
             ControlPanel controlPanel = new ControlPanel(_player, chnl.Guild.GetUser(key));
             if (_player == null) return;
+            var oldPanels =_TrackingControlPanels.Where(x => (x.Value.Key.Channel as SocketGuildChannel).Guild == chnl.Guild);
+            if (oldPanels.Count() > 0)
+            {
+                await oldPanels.FirstOrDefault().Value.Key.DeleteAsync();
+                _TrackingControlPanels.Remove(oldPanels.FirstOrDefault().Key);
+            }
             RestUserMessage msg = await controlPanel.CreateEmbed(channel);
             _TrackingControlPanels.Add(msg.Id, new KeyValuePair<RestUserMessage, ControlPanel>( msg, controlPanel));
              //await UpdateTrack(controlPanel, msg);
@@ -237,7 +251,7 @@ namespace DiscordBot.Services
             if (!endedEventArgs.Reason.ShouldPlayNext())
                 return;
             LavaPlayer player = endedEventArgs.Player;
-            if (player.Queue.Items.Count() is 0)
+            if (!player.Queue.TryDequeue(out var queueable))
             {
                 await player.TextChannel.SendMessageAsync("", false, warnembed.EndQueue());
                 await _lavaNode.LeaveAsync(player.VoiceChannel);
@@ -246,8 +260,12 @@ namespace DiscordBot.Services
                 AdminUsers.Remove(item.Key);
                 return;
             }
-
-            await player.SkipAsync();
+            if (!(queueable is LavaTrack track))
+            {
+                await player.TextChannel.SendMessageAsync("Next item in queue is not a track.");
+                return;
+            }
+            await player.PlayAsync(track);
             await player.TextChannel.SendMessageAsync("", false, warnembed.NowPlaying(player.Track.Title));
         }
         private Task LogAsync(LogMessage logMessage)
