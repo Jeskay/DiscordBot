@@ -24,9 +24,13 @@ C:\Users\ASUS\source\repos\DiscordBot\DiscordBot\bin\Debug\netcoreapp3.1\runtime
 C:\Users\ASUS\source\repos\DiscordBot\DiscordBot\bin\Debug\netcoreapp3.1\runtimes\osx-x64\native\libsodium.dylib
 C:\Users\ASUS\source\repos\DiscordBot\DiscordBot\bin\Debug\netcoreapp3.1\runtimes\win-x64\native\libsodium.dll
 C:\Users\ASUS\source\repos\DiscordBot\DiscordBot\bin\Debug\netcoreapp3.1\runtimes\win-x86\native\libsodium.dll
-C:\Users\ASUS\source\repos\DiscordBot\DiscordBot\bin\Debug\netcoreapp3.1\runtimes\win\lib\netcoreapp2.0\Microsoft.Win32.SystemEvents.dll
-C:\Users\ASUS\source\repos\DiscordBot\DiscordBot\bin\Debug\netcoreapp3.1\runtimes\unix\lib\netcoreapp2.0\System.Drawing.Common.dll
-C:\Users\ASUS\source\repos\DiscordBot\DiscordBot\bin\Debug\netcoreapp3.1\runtimes\win\lib\netcoreapp2.0\System.Drawing.Common.dll
 C:\Users\ASUS\source\repos\DiscordBot\DiscordBot\obj\Debug\netcoreapp3.1\DiscordBot.csproj.CopyComplete
 C:\Users\ASUS\source\repos\DiscordBot\DiscordBot\obj\Debug\netcoreapp3.1\DiscordBot.dll
 C:\Users\ASUS\source\repos\DiscordBot\DiscordBot\obj\Debug\netcoreapp3.1\DiscordBot.pdb
+C:\Users\ASUS\source\repos\DiscordBot\DiscordBot\obj\Debug\netcoreapp3.1\DiscordBot.csproj.CoreCompileInputs.cache
+C:\Users\ASUS\source\repos\DiscordBot\DiscordBot\bin\Debug\netcoreapp3.1\System.Linq.Async.dll
+C:\Users\ASUS\source\repos\DiscordBot\DiscordBot\bin\Debug\netcoreapp3.1\runtimes\linux-musl-x64\native\libsodium.so
+C:\Users\ASUS\source\repos\DiscordBot\DiscordBot\bin\Debug\netcoreapp3.1\runtimes\win\lib\netcoreapp3.0\Microsoft.Win32.SystemEvents.dll
+C:\Users\ASUS\source\repos\DiscordBot\DiscordBot\bin\Debug\netcoreapp3.1\runtimes\unix\lib\netcoreapp3.0\System.Drawing.Common.dll
+C:\Users\ASUS\source\repos\DiscordBot\DiscordBot\bin\Debug\netcoreapp3.1\runtimes\win\lib\netcoreapp3.0\System.Drawing.Common.dll
+C:\Users\ASUS\source\repos\DiscordBot\DiscordBot\obj\Debug\netcoreapp3.1\DiscordBot.genruntimeconfig.cache

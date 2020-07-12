@@ -1,8 +1,14 @@
 {
   "ExpandedNodes": [
     "",
-    "\\DiscordBot"
+    "\\DiscordBot",
+    "\\DiscordBot\\Core",
+    "\\DiscordBot\\Data",
+    "\\DiscordBot\\Modules",
+    "\\DiscordBot\\Services",
+    "\\DiscordBot\\Services\\MusicService",
+    "\\DiscordBot\\Services\\MusicService\\Common"
   ],
-  "SelectedNode": "\\DiscordBot.sln",
+  "SelectedNode": "\\DiscordBot\\Core\\MainBotClient.cs",
   "PreviewInSolutionExplorer": false
 }

@@ -93,7 +93,7 @@ namespace DiscordBot.Services.Common
 
         public async Task<bool> SkipAsync()
         {
-            if (player is null || player.Queue.Items.Count() is 0) return false;
+            if (player is null || player.Queue.Count() is 0) return false;
             await player.SkipAsync();
             return true;
         }

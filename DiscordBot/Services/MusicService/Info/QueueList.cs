@@ -36,7 +36,7 @@ namespace DiscordBot.Services.Info
                 embedBuilder.AddField("**Плэйлист**", "Плэйлист пуст" + '\n' + $"[Пригласить бота]({InviteBot})");
             else
             {
-                embedBuilder.AddField("**Плейлист**", Queuelist(player.Queue.Items.ToList()) + '\n' + $"Количество треков [{player.Queue.Count}] | {totalLenght} общая длительность" + '\n' + $"[Пригласить бота]({InviteBot})");
+                embedBuilder.AddField("**Плейлист**", Queuelist(player.Queue.ToList()) + '\n' + $"Количество треков [{player.Queue.Count}] | {totalLenght} общая длительность" + '\n' + $"[Пригласить бота]({InviteBot})");
             }
 
             embedBuilder.Footer.IconUrl = selfUser.GetAvatarUrl();

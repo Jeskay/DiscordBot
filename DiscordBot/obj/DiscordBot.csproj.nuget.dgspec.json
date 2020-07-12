@@ -43,19 +43,19 @@
           "dependencies": {
             "Discord.Net": {
               "target": "Package",
-              "version": "[2.1.1, )"
+              "version": "[2.2.0, )"
             },
             "System.Drawing.Common": {
               "target": "Package",
-              "version": "[4.5.1, )"
+              "version": "[4.7.0, )"
             },
             "Victoria": {
               "target": "Package",
-              "version": "[5.1.2, )"
+              "version": "[5.1.6, )"
             },
             "libsodium": {
               "target": "Package",
-              "version": "[1.0.17.1, )"
+              "version": "[1.0.18, )"
             }
           },
           "imports": [
@@ -73,7 +73,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\3.1.101\\RuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\3.1.301\\RuntimeIdentifierGraph.json"
         }
       }
     }
